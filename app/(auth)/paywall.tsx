@@ -37,7 +37,7 @@ const TIERS = [
 export default function Paywall() {
   const [selectedTier, setSelectedTier] = useState('com.chorely.family');
   const [loading, setLoading] = useState(false);
-  const { uid } = useAuthStore();
+  const { uid, familyId } = useAuthStore();
 
   useEffect(() => {
     initIAP().catch(console.error);
@@ -73,10 +73,10 @@ export default function Paywall() {
     if (!uid) return;
     setLoading(true);
     try {
-      const tier = await restorePurchases('');
+      const tier = await restorePurchases(familyId ?? '');
       if (tier) {
         Alert.alert('Restored!', 'Your purchase has been restored.');
-        router.replace('/(auth)/sign-in');
+        router.replace('/(auth)/onboarding');
       } else {
         Alert.alert('Nothing to restore', 'No previous purchases found.');
       }

@@ -4,6 +4,7 @@ import * as AppleAuthentication from 'expo-apple-authentication';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 import { signInWithApple, signInWithGoogle } from '@/services/auth';
+import { statusCodes } from '@react-native-google-signin/google-signin';
 
 export default function SignIn() {
   const [loading, setLoading] = useState<'apple' | 'google' | null>(null);
@@ -27,7 +28,9 @@ export default function SignIn() {
     try {
       await signInWithGoogle();
     } catch (e: any) {
-      Alert.alert('Sign in failed', e.message);
+      if (e.code !== statusCodes.SIGN_IN_CANCELLED) {
+        Alert.alert('Sign in failed', e.message);
+      }
     } finally {
       setLoading(null);
     }
