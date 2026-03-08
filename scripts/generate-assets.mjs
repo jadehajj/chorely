@@ -75,7 +75,7 @@ async function main() {
   console.log('Generating assets/splash.png …');
   // Resize icon to 400×400 for splash composite
   const iconSmall = await sharp(iconBuf).resize(400, 400).toBuffer();
-  // Icon centered horizontally, placed at y=1044 (center ~1244)
+  // Icon centered horizontally, placed at top=1144 (center y=1344)
   const splashBuf = await sharp(Buffer.from(SPLASH_SVG))
     .composite([{ input: iconSmall, top: 1144, left: 421 }])
     .resize(1242, 2688)
