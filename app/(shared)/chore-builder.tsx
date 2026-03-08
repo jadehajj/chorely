@@ -132,7 +132,7 @@ export default function ChoreBuilder() {
           <Switch
             value={requiresApproval}
             onValueChange={setRequiresApproval}
-            trackColor={{ true: '#6366F1' }}
+            trackColor={{ true: '#FF6B6B' }}
           />
         </View>
 
