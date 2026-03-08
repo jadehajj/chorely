@@ -8,7 +8,7 @@ interface AuthState {
   familyId: string | null;
   linkedChildId: string | null;
   isLoading: boolean;
-  setAuth: (uid: string, role: UserRole, familyId: string, linkedChildId?: string) => void;
+  setAuth: (uid: string, role: UserRole, familyId: string, linkedChildId?: string | null) => void;
   clearAuth: () => void;
   setLoading: (loading: boolean) => void;
 }
