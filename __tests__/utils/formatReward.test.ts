@@ -16,6 +16,9 @@ describe('formatReward', () => {
   it('formats zero emoji', () => {
     expect(formatReward(emojiChild, 0, 'AUD')).toBe('0 ⭐');
   });
+  it('floors fractional emoji amount', () => {
+    expect(formatReward(emojiChild, 5.9, 'AUD')).toBe('5 ⭐');
+  });
 });
 
 describe('formatBalance', () => {
