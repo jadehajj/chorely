@@ -30,10 +30,13 @@ export async function fetchProducts(): Promise<Product[]> {
   return getProducts({ skus: PRODUCT_IDS });
 }
 
-export async function purchaseTier(productId: string): Promise<Purchase> {
-  const purchase = await requestPurchase({ sku: productId });
-  await finishTransaction({ purchase: purchase as Purchase, isConsumable: false });
-  return purchase as Purchase;
+export async function purchaseTier(productId: string): Promise<Purchase | null> {
+  const result = await requestPurchase({ sku: productId });
+  const purchase = Array.isArray(result) ? result[0] ?? null : result ?? null;
+  if (purchase) {
+    await finishTransaction({ purchase, isConsumable: false });
+  }
+  return purchase;
 }
 
 export async function restorePurchases(familyId: string): Promise<string | null> {
