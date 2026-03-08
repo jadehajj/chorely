@@ -11,7 +11,7 @@ interface Props extends TouchableOpacityProps {
 const variants = {
   primary: 'bg-primary active:bg-primary-dark',
   secondary: 'bg-white border border-gray-300 active:bg-gray-50',
-  danger: 'bg-red-500 active:bg-red-600',
+  danger: 'bg-danger active:opacity-80',
   ghost: 'bg-transparent',
 };
 
