@@ -41,6 +41,8 @@ GoogleService-Info.plist
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
+# generated native folders — track ios/ but ignore CocoaPods & build artifacts
 /android
+ios/Pods/
+ios/build/
+ios/DerivedData/
