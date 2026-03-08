@@ -1,6 +1,6 @@
 import {
   initConnection,
-  getProducts,
+  fetchProducts as iapFetchProducts,
   requestPurchase,
   finishTransaction,
   getAvailablePurchases,
@@ -27,11 +27,17 @@ export async function initIAP(): Promise<void> {
 }
 
 export async function fetchProducts(): Promise<Product[]> {
-  return getProducts({ skus: PRODUCT_IDS });
+  return ((await iapFetchProducts({ skus: PRODUCT_IDS })) ?? []) as Product[];
 }
 
 export async function purchaseTier(productId: string): Promise<Purchase | null> {
-  const result = await requestPurchase({ sku: productId });
+  const result = await requestPurchase({
+    type: 'in-app',
+    request: {
+      apple: { sku: productId },
+      google: { skus: [productId] },
+    },
+  });
   const purchase = Array.isArray(result) ? result[0] ?? null : result ?? null;
   if (purchase) {
     await finishTransaction({ purchase, isConsumable: false });
