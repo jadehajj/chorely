@@ -79,7 +79,7 @@ export default function ChoreBuilder() {
             <TouchableOpacity
               key={e}
               onPress={() => setIcon(e)}
-              className={`w-12 h-12 items-center justify-center rounded-2xl mr-2 mb-2 ${icon === e ? 'bg-indigo-100 border-2 border-primary' : 'bg-gray-100'}`}
+              className={`w-12 h-12 items-center justify-center rounded-2xl mr-2 mb-2 ${icon === e ? 'bg-primary/20 border-2 border-primary' : 'bg-gray-100'}`}
             >
               <Text className="text-2xl">{e}</Text>
             </TouchableOpacity>
@@ -92,7 +92,7 @@ export default function ChoreBuilder() {
             <TouchableOpacity
               key={s.value}
               onPress={() => setSchedule(s.value as 'daily' | 'weekly' | 'once')}
-              className={`flex-1 h-11 items-center justify-center rounded-xl mr-2 border ${schedule === s.value ? 'border-primary bg-indigo-50' : 'border-gray-200'}`}
+              className={`flex-1 h-11 items-center justify-center rounded-xl mr-2 border ${schedule === s.value ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
             >
               <Text variant="caption" className={schedule === s.value ? 'text-primary font-semibold' : ''}>{s.label}</Text>
             </TouchableOpacity>
@@ -105,7 +105,7 @@ export default function ChoreBuilder() {
             <TouchableOpacity
               key={child.id}
               onPress={() => setAssignedChildId(child.id)}
-              className={`flex-row items-center px-4 h-11 rounded-full mr-2 mb-2 border ${assignedChildId === child.id ? 'border-primary bg-indigo-50' : 'border-gray-200'}`}
+              className={`flex-row items-center px-4 h-11 rounded-full mr-2 mb-2 border ${assignedChildId === child.id ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
             >
               <Text className="mr-1">{child.avatarEmoji}</Text>
               <Text variant="caption">{child.name}</Text>

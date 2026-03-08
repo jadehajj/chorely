@@ -35,7 +35,7 @@ export function StepAddChild({ onNext }: Props) {
           <TouchableOpacity
             key={e}
             onPress={() => setAvatar(e)}
-            className={`w-12 h-12 items-center justify-center rounded-full mr-2 mb-2 ${avatar === e ? 'bg-indigo-100 border-2 border-primary' : 'bg-gray-100'}`}
+            className={`w-12 h-12 items-center justify-center rounded-full mr-2 mb-2 ${avatar === e ? 'bg-primary/20 border-2 border-primary' : 'bg-gray-100'}`}
           >
             <Text className="text-2xl">{e}</Text>
           </TouchableOpacity>
@@ -58,13 +58,13 @@ export function StepAddChild({ onNext }: Props) {
       <View className="flex-row mb-6">
         <TouchableOpacity
           onPress={() => setRewardMode('money')}
-          className={`flex-1 h-14 items-center justify-center rounded-2xl mr-2 border-2 ${rewardMode === 'money' ? 'border-primary bg-indigo-50' : 'border-gray-200'}`}
+          className={`flex-1 h-14 items-center justify-center rounded-2xl mr-2 border-2 ${rewardMode === 'money' ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
         >
           <Text className="text-lg">💰 Money</Text>
         </TouchableOpacity>
         <TouchableOpacity
           onPress={() => setRewardMode('emoji')}
-          className={`flex-1 h-14 items-center justify-center rounded-2xl border-2 ${rewardMode === 'emoji' ? 'border-primary bg-indigo-50' : 'border-gray-200'}`}
+          className={`flex-1 h-14 items-center justify-center rounded-2xl border-2 ${rewardMode === 'emoji' ? 'border-primary bg-primary/10' : 'border-gray-200'}`}
         >
           <Text className="text-lg">⭐ Emoji</Text>
         </TouchableOpacity>

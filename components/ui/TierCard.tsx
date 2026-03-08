@@ -18,7 +18,7 @@ export function TierCard({ title, price, description, features, isPopular, isSel
       onPress={onPress}
       className={cn(
         'rounded-3xl p-5 border-2 mb-3',
-        isSelected ? 'border-primary bg-indigo-50' : 'border-gray-200 bg-white',
+        isSelected ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white',
       )}
     >
       {isPopular && (
