@@ -20,16 +20,18 @@ export default function RootLayout() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          setAuth(user.uid, data.role, data.familyId, data.linkedChildId);
-          if (data.familyId) startSync(data.familyId);
-          if (data.role === 'parent') {
-            registerForPushNotifications().catch(() => {});
+        try {
+          const userDoc = await getDoc(doc(db, 'users', user.uid));
+          if (userDoc.exists()) {
+            const data = userDoc.data();
+            setAuth(user.uid, data.role, data.familyId, data.linkedChildId);
+            if (data.familyId) startSync(data.familyId, data.role, data.linkedChildId);
+            registerForPushNotifications(user.uid).catch(() => {});
+          } else {
+            // New user — no user doc yet, route to paywall
+            setLoading(false);
           }
-        } else {
-          // New user — no user doc yet, route to paywall
+        } catch {
           setLoading(false);
         }
       } else {

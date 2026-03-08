@@ -1,0 +1,13 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Completion photos — write requires auth + matching familyId in Firestore user doc;
+    // read requires auth (parents need to see photos in approval queue)
+    match /families/{familyId}/completions/{filename} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.familyId == familyId;
+    }
+  }
+}

@@ -132,6 +132,11 @@ export default function ChildHistory() {
       setLoading(false);
       return;
     }
+    const isValidChild = children.some((c) => c.id === childId);
+    if (!isValidChild) {
+      setLoading(false);
+      return;
+    }
 
     let cancelled = false;
 
@@ -173,7 +178,7 @@ export default function ChildHistory() {
     return () => {
       cancelled = true;
     };
-  }, [family, childId]);
+  }, [family, childId, children]);
 
   // Guard — child or family not found
   if (!child || !family) {

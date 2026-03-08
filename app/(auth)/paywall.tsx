@@ -8,6 +8,7 @@ import { initIAP, fetchProducts, purchaseTier, restorePurchases } from '@/servic
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { useAuthStore } from '@/stores/authStore';
+import { startSync } from '@/services/sync';
 
 const TIERS = [
   {
@@ -37,7 +38,7 @@ const TIERS = [
 export default function Paywall() {
   const [selectedTier, setSelectedTier] = useState('com.chorely.family');
   const [loading, setLoading] = useState(false);
-  const { uid, familyId } = useAuthStore();
+  const { uid, familyId, setAuth } = useAuthStore();
 
   useEffect(() => {
     initIAP().catch(console.error);
@@ -48,8 +49,8 @@ export default function Paywall() {
     setLoading(true);
     try {
       await purchaseTier(selectedTier);
-      const familyId = `family_${uid}_${Date.now()}`;
-      await setDoc(doc(db, 'families', familyId), {
+      const newFamilyId = `family_${uid}_${Date.now()}`;
+      await setDoc(doc(db, 'families', newFamilyId), {
         name: '',
         joinCode: '',
         verificationMode: 'self',
@@ -58,7 +59,9 @@ export default function Paywall() {
         parentIds: [uid],
         createdAt: serverTimestamp(),
       });
-      await setDoc(doc(db, 'users', uid), { familyId }, { merge: true });
+      await setDoc(doc(db, 'users', uid), { familyId: newFamilyId }, { merge: true });
+      setAuth(uid, 'parent', newFamilyId, null);
+      startSync(newFamilyId, 'parent', null);
       router.replace('/(auth)/onboarding');
     } catch (e: any) {
       if (e.code !== 'E_USER_CANCELLED') {
@@ -80,6 +83,8 @@ export default function Paywall() {
       } else {
         Alert.alert('Nothing to restore', 'No previous purchases found.');
       }
+    } catch (e: any) {
+      Alert.alert('Restore failed', e.message ?? 'Please try again.');
     } finally {
       setLoading(false);
     }

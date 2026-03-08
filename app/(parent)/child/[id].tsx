@@ -48,7 +48,11 @@ export default function ChildDetail() {
           Alert.prompt('Add amount', '', async (v) => {
             const amount = parseFloat(v ?? '0');
             if (isNaN(amount) || amount <= 0) return;
-            await adjustBalance(family!.id, id, amount, 'Manual bonus');
+            try {
+              await adjustBalance(family!.id, id, amount, 'Manual bonus');
+            } catch (e: unknown) {
+              Alert.alert('Error', e instanceof Error ? e.message : 'Adjustment failed.');
+            }
           });
         },
       },
@@ -57,7 +61,11 @@ export default function ChildDetail() {
           Alert.prompt('Deduct amount', '', async (v) => {
             const amount = parseFloat(v ?? '0');
             if (isNaN(amount) || amount <= 0) return;
-            await adjustBalance(family!.id, id, -amount, 'Manual deduction');
+            try {
+              await adjustBalance(family!.id, id, -amount, 'Manual deduction');
+            } catch (e: unknown) {
+              Alert.alert('Error', e instanceof Error ? e.message : 'Adjustment failed.');
+            }
           });
         },
       },

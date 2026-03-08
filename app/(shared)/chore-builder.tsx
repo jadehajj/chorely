@@ -31,7 +31,7 @@ export default function ChoreBuilder() {
   const assignedChild = children.find((c) => c.id === assignedChildId);
 
   async function handleSave() {
-    if (!family || !name.trim()) return;
+    if (!family || !name.trim() || !assignedChildId) return;
     setLoading(true);
     try {
       const data = {

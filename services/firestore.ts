@@ -1,7 +1,7 @@
 import {
   collection, doc, addDoc, setDoc, updateDoc,
   onSnapshot, query, where, orderBy, serverTimestamp,
-  getDoc, getDocs, writeBatch, arrayUnion, Unsubscribe,
+  getDoc, getDocs, writeBatch, arrayUnion, increment, Unsubscribe,
 } from 'firebase/firestore';
 import { db } from '@/services/firebase';
 import { useFamilyStore } from '@/stores/familyStore';
@@ -83,7 +83,7 @@ export async function deleteChore(familyId: string, choreId: string): Promise<vo
   await updateDoc(doc(db, 'families', familyId, 'chores', choreId), { isActive: false });
 }
 
-// Completions
+// Completions — atomic: create completion + credit balance in one batch
 export async function submitCompletion(
   familyId: string,
   choreId: string,
@@ -92,31 +92,72 @@ export async function submitCompletion(
   requiresApproval: boolean,
 ): Promise<string> {
   const status = requiresApproval ? 'pending' : 'approved';
-  const ref = await addDoc(collection(db, 'families', familyId, 'completions'), {
-    choreId, childId, status, photoUrl,
-    submittedAt: serverTimestamp(),
-    reviewedAt: null,
-    rejectionReason: null,
-  });
+  const completionRef = doc(collection(db, 'families', familyId, 'completions'));
 
   if (!requiresApproval) {
-    await creditBalance(familyId, choreId, childId, ref.id);
+    const choreSnap = await getDoc(doc(db, 'families', familyId, 'chores', choreId));
+    if (!choreSnap.exists()) throw new Error('Chore not found');
+    const chore = choreSnap.data();
+
+    const batch = writeBatch(db);
+    batch.set(completionRef, {
+      choreId, childId, status, photoUrl,
+      submittedAt: serverTimestamp(),
+      reviewedAt: null,
+      rejectionReason: null,
+    });
+    batch.update(doc(db, 'families', familyId, 'children', childId), {
+      balance: increment(chore.value),
+    });
+    const txRef = doc(collection(db, 'families', familyId, 'transactions'));
+    batch.set(txRef, {
+      childId, choreId, completionId: completionRef.id,
+      type: 'earned',
+      amount: chore.value,
+      description: chore.name,
+      createdAt: serverTimestamp(),
+    });
+    await batch.commit();
+  } else {
+    await setDoc(completionRef, {
+      choreId, childId, status, photoUrl,
+      submittedAt: serverTimestamp(),
+      reviewedAt: null,
+      rejectionReason: null,
+    });
   }
 
-  return ref.id;
+  return completionRef.id;
 }
 
+// Approve completion — atomic: update completion + credit balance in one batch
 export async function approveCompletion(
   familyId: string,
   completionId: string,
   choreId: string,
   childId: string,
 ): Promise<void> {
-  await updateDoc(doc(db, 'families', familyId, 'completions', completionId), {
+  const choreSnap = await getDoc(doc(db, 'families', familyId, 'chores', choreId));
+  if (!choreSnap.exists()) throw new Error('Chore not found');
+  const chore = choreSnap.data();
+
+  const batch = writeBatch(db);
+  batch.update(doc(db, 'families', familyId, 'completions', completionId), {
     status: 'approved',
     reviewedAt: serverTimestamp(),
   });
-  await creditBalance(familyId, choreId, childId, completionId);
+  batch.update(doc(db, 'families', familyId, 'children', childId), {
+    balance: increment(chore.value),
+  });
+  const txRef = doc(collection(db, 'families', familyId, 'transactions'));
+  batch.set(txRef, {
+    childId, choreId, completionId,
+    type: 'earned',
+    amount: chore.value,
+    description: chore.name,
+    createdAt: serverTimestamp(),
+  });
+  await batch.commit();
 }
 
 export async function rejectCompletion(
@@ -131,46 +172,17 @@ export async function rejectCompletion(
   });
 }
 
-async function creditBalance(
-  familyId: string,
-  choreId: string,
-  childId: string,
-  completionId: string,
-): Promise<void> {
-  const choreSnap = await getDoc(doc(db, 'families', familyId, 'chores', choreId));
-  if (!choreSnap.exists()) return;
-  const chore = choreSnap.data();
-
-  const childSnap = await getDoc(doc(db, 'families', familyId, 'children', childId));
-  if (!childSnap.exists()) return;
-  const current = childSnap.data().balance ?? 0;
-
-  const batch = writeBatch(db);
-  batch.update(doc(db, 'families', familyId, 'children', childId), { balance: current + chore.value });
-  const txRef = doc(collection(db, 'families', familyId, 'transactions'));
-  batch.set(txRef, {
-    childId, choreId, completionId,
-    type: 'earned',
-    amount: chore.value,
-    description: chore.name,
-    createdAt: serverTimestamp(),
-  });
-  await batch.commit();
-}
-
-// Manual balance adjustment
+// Manual balance adjustment — atomic, uses increment to avoid read-modify-write race
 export async function adjustBalance(
   familyId: string,
   childId: string,
   amount: number,
   description: string,
 ): Promise<void> {
-  const childSnap = await getDoc(doc(db, 'families', familyId, 'children', childId));
-  if (!childSnap.exists()) return;
-  const current = childSnap.data().balance ?? 0;
-
   const batch = writeBatch(db);
-  batch.update(doc(db, 'families', familyId, 'children', childId), { balance: current + amount });
+  batch.update(doc(db, 'families', familyId, 'children', childId), {
+    balance: increment(amount),
+  });
   const txRef = doc(collection(db, 'families', familyId, 'transactions'));
   batch.set(txRef, {
     childId, type: amount >= 0 ? 'manual' : 'deducted',
@@ -181,15 +193,25 @@ export async function adjustBalance(
   await batch.commit();
 }
 
-// Join codes
+// Join codes — crypto-random to avoid predictability
 export async function generateJoinCode(familyId: string): Promise<string> {
-  const code = 'CHORELY-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const arr = new Uint8Array(4);
+  crypto.getRandomValues(arr);
+  const suffix = Array.from(arr).map((b) => chars[b % 36]).join('');
+  const code = 'CHORELY-' + suffix;
   const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
   await updateDoc(doc(db, 'families', familyId), { joinCode: code, joinCodeExpiresAt: expiresAt });
   return code;
 }
 
 export async function joinFamily(uid: string, code: string): Promise<void> {
+  // Prevent joining a second family
+  const existingUser = await getDoc(doc(db, 'users', uid));
+  if (existingUser.exists() && existingUser.data().familyId) {
+    throw new Error('You are already a member of a family');
+  }
+
   const snap = await getDocs(
     query(collection(db, 'families'), where('joinCode', '==', code))
   );
@@ -207,7 +229,9 @@ export async function joinFamily(uid: string, code: string): Promise<void> {
 }
 
 export async function generateKidDeviceCode(familyId: string, childId: string): Promise<string> {
-  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  const code = String(100000 + (arr[0] % 900000));
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
   await setDoc(doc(db, 'kidCodes', code), { familyId, childId, expiresAt });
   return code;
@@ -218,6 +242,12 @@ export async function redeemKidCode(uid: string, code: string): Promise<void> {
   if (!codeSnap.exists()) throw new Error('Invalid code');
   const data = codeSnap.data();
   if (new Date() > data.expiresAt.toDate()) throw new Error('Code expired');
+
+  // Prevent re-linking an already-linked child
+  const childSnap = await getDoc(doc(db, 'families', data.familyId, 'children', data.childId));
+  if (childSnap.exists() && childSnap.data().linkedDeviceId) {
+    throw new Error('This child already has a linked device');
+  }
 
   const batch = writeBatch(db);
   batch.set(doc(db, 'users', uid), {

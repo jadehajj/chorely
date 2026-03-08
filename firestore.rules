@@ -1,32 +1,88 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helper functions
+    // -------------------------------------------------------------------------
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isParentOf(familyId) {
+      return request.auth != null &&
+        request.auth.uid in get(/databases/$(database)/documents/families/$(familyId)).data.parentIds;
+    }
+
+    function isKidInFamily(familyId) {
+      return request.auth != null &&
+        userDoc().role == 'kid' &&
+        userDoc().familyId == familyId;
+    }
+
+    // -------------------------------------------------------------------------
+    // Users — each user can only read/write their own doc
+    // -------------------------------------------------------------------------
+
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    match /families/{familyId} {
-      allow read, write: if request.auth != null &&
-        request.auth.uid in resource.data.parentIds;
+    // -------------------------------------------------------------------------
+    // Families
+    // -------------------------------------------------------------------------
 
-      match /{subcollection}/{docId} {
-        allow read, write: if request.auth != null &&
-          get(/databases/$(database)/documents/families/$(familyId)).data.parentIds.hasAny([request.auth.uid]);
+    match /families/{familyId} {
+      allow read, write: if isParentOf(familyId);
+
+      // Children — parents full access; kids read only their own doc
+      match /children/{childId} {
+        allow read, write: if isParentOf(familyId);
+        allow read: if request.auth != null &&
+          userDoc().role == 'kid' &&
+          userDoc().linkedChildId == childId &&
+          userDoc().familyId == familyId;
+      }
+
+      // Chores — parents full access; kids read-only (to see their tasks)
+      match /chores/{choreId} {
+        allow read, write: if isParentOf(familyId);
+        allow read: if isKidInFamily(familyId);
+      }
+
+      // Completions — parents full access; kids can create/read only their own
+      match /completions/{completionId} {
+        allow read, write: if isParentOf(familyId);
+
+        allow create: if request.auth != null &&
+          userDoc().role == 'kid' &&
+          userDoc().familyId == familyId &&
+          request.resource.data.childId == userDoc().linkedChildId;
+
+        allow read: if request.auth != null &&
+          userDoc().role == 'kid' &&
+          userDoc().familyId == familyId &&
+          resource.data.childId == userDoc().linkedChildId;
+      }
+
+      // Transactions — parents only
+      match /transactions/{txId} {
+        allow read, write: if isParentOf(familyId);
       }
     }
 
-    match /families/{familyId}/children/{childId} {
-      allow read: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.linkedChildId == childId;
-    }
+    // -------------------------------------------------------------------------
+    // Kid device codes
+    // -------------------------------------------------------------------------
 
-    match /families/{familyId}/completions/{completionId} {
+    match /kidCodes/{code} {
+      // Only parents of the target family can create a code
       allow create: if request.auth != null &&
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'kid';
-      allow read: if request.auth != null && (
-        request.auth.uid in get(/databases/$(database)/documents/families/$(familyId)).data.parentIds ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'kid'
-      );
+        isParentOf(request.resource.data.familyId);
+
+      // Any authenticated user can read/delete by exact code ID (needed for redemption)
+      allow read, delete: if request.auth != null;
     }
   }
 }
