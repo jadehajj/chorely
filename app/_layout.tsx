@@ -5,6 +5,7 @@ import { onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/services/firebase';
 import { useAuthStore } from '@/stores/authStore';
+import { startSync, stopSync } from '@/services/sync';
 import 'react-native-get-random-values';
 
 export default function RootLayout() {
@@ -17,11 +18,13 @@ export default function RootLayout() {
         if (userDoc.exists()) {
           const data = userDoc.data();
           setAuth(user.uid, data.role, data.familyId, data.linkedChildId);
+          if (data.familyId) startSync(data.familyId);
         } else {
           // New user — no user doc yet, route to paywall
           setLoading(false);
         }
       } else {
+        stopSync();
         clearAuth();
       }
     });
