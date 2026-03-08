@@ -33,6 +33,13 @@
           "color": "#ffffff"
         }
       ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Chorely uses your photos to add proof images to chore completions.",
+          "cameraPermission": "Chorely uses your camera to take proof photos for chore completions."
+        }
+      ],
       "@react-native-google-signin/google-signin",
       [
         "react-native-iap",

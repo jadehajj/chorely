@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { View, ScrollView, SafeAreaView, Alert } from 'react-native';
+import { View, ScrollView, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { Text } from '@/components/ui/Text';
 import { ChoreCard } from '@/components/kid/ChoreCard';
 import { CelebrationOverlay } from '@/components/kid/CelebrationOverlay';
@@ -8,6 +9,7 @@ import { useFamilyStore } from '@/stores/familyStore';
 import { useChoresStore } from '@/stores/choresStore';
 import { useCompletionsStore } from '@/stores/completionsStore';
 import { submitCompletion } from '@/services/firestore';
+import { uploadCompletionPhoto } from '@/services/photoUpload';
 import { formatBalance } from '@/utils/formatReward';
 import { Chore } from '@/stores/choresStore';
 
@@ -18,6 +20,7 @@ export default function KidView() {
   const { completions } = useCompletionsStore();
   const [celebrating, setCelebrating] = useState(false);
   const [celebrationMsg, setCelebrationMsg] = useState('');
+  const [uploadingChoreId, setUploadingChoreId] = useState<string | null>(null);
 
   const child = children.find((c) => c.id === linkedChildId);
   if (!child || !family) return null;
@@ -27,14 +30,41 @@ export default function KidView() {
     (c) => c.childId === linkedChildId && isToday(c.submittedAt)
   );
 
-  async function handleChorePress(chore: Chore) {
-    const existing = todayCompletions.find((c) => c.choreId === chore.id);
-    if (existing) return;
-
+  async function handleChoreComplete(chore: Chore, source: 'camera' | 'library' | 'none') {
     const requiresApproval = family!.verificationMode === 'approval' || chore.requiresApproval;
+    let photoUrl: string | null = null;
+
+    if (source !== 'none') {
+      const result =
+        source === 'camera'
+          ? await ImagePicker.launchCameraAsync({
+              mediaTypes: 'images',
+              quality: 0.8,
+              allowsEditing: true,
+              aspect: [4, 3],
+            })
+          : await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: 'images',
+              quality: 0.8,
+              allowsEditing: true,
+              aspect: [4, 3],
+            });
+
+      if (result.canceled) return;
+
+      setUploadingChoreId(chore.id);
+      try {
+        photoUrl = await uploadCompletionPhoto(family!.id, result.assets[0].uri);
+      } catch {
+        setUploadingChoreId(null);
+        Alert.alert('Upload failed', 'Could not upload photo. Try again or skip the photo.');
+        return;
+      }
+      setUploadingChoreId(null);
+    }
 
     try {
-      await submitCompletion(family!.id, chore.id, child!.id, null, requiresApproval);
+      await submitCompletion(family!.id, chore.id, child!.id, photoUrl, requiresApproval);
       if (!requiresApproval) {
         setCelebrationMsg(`${chore.iconEmoji}\n+${chore.value}!`);
         setCelebrating(true);
@@ -46,8 +76,39 @@ export default function KidView() {
     }
   }
 
+  async function handleChorePress(chore: Chore) {
+    const existing = todayCompletions.find((c) => c.choreId === chore.id);
+    if (existing) return;
+
+    const requiresApproval = family!.verificationMode === 'approval' || chore.requiresApproval;
+
+    if (requiresApproval) {
+      Alert.alert(
+        'Add proof photo?',
+        'A photo helps Mum or Dad confirm you did the chore!',
+        [
+          { text: '📷 Take Photo', onPress: () => handleChoreComplete(chore, 'camera') },
+          { text: '🖼 Choose Photo', onPress: () => handleChoreComplete(chore, 'library') },
+          { text: 'Submit without photo', onPress: () => handleChoreComplete(chore, 'none') },
+          { text: 'Cancel', style: 'cancel' },
+        ],
+      );
+    } else {
+      await handleChoreComplete(chore, 'none');
+    }
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
+      {uploadingChoreId !== null && (
+        <View className="absolute inset-0 z-50 items-center justify-center bg-black/40">
+          <View className="bg-white rounded-2xl p-6 items-center gap-3">
+            <ActivityIndicator size="large" color="#6366F1" />
+            <Text variant="label">Uploading photo…</Text>
+          </View>
+        </View>
+      )}
+
       <ScrollView className="flex-1 px-5">
         <View className="items-center py-8">
           <Text className="text-6xl mb-3">{child.avatarEmoji}</Text>
