@@ -103,7 +103,7 @@ export default function KidView() {
       {uploadingChoreId !== null && (
         <View className="absolute inset-0 z-50 items-center justify-center bg-black/40">
           <View className="bg-white rounded-2xl p-6 items-center gap-3">
-            <ActivityIndicator size="large" color="#6366F1" />
+            <ActivityIndicator size="large" color="#FF6B6B" />
             <Text variant="label">Uploading photo…</Text>
           </View>
         </View>
