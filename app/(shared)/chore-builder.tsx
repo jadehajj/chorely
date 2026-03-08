@@ -91,7 +91,7 @@ export default function ChoreBuilder() {
           {SCHEDULES.map((s) => (
             <TouchableOpacity
               key={s.value}
-              onPress={() => setSchedule(s.value)}
+              onPress={() => setSchedule(s.value as 'daily' | 'weekly' | 'once')}
               className={`flex-1 h-11 items-center justify-center rounded-xl mr-2 border ${schedule === s.value ? 'border-primary bg-indigo-50' : 'border-gray-200'}`}
             >
               <Text variant="caption" className={schedule === s.value ? 'text-primary font-semibold' : ''}>{s.label}</Text>

@@ -31,10 +31,10 @@ export default function KidView() {
     const existing = todayCompletions.find((c) => c.choreId === chore.id);
     if (existing) return;
 
-    const requiresApproval = family.verificationMode === 'approval' || chore.requiresApproval;
+    const requiresApproval = family!.verificationMode === 'approval' || chore.requiresApproval;
 
     try {
-      await submitCompletion(family.id, chore.id, child.id, null, requiresApproval);
+      await submitCompletion(family!.id, chore.id, child!.id, null, requiresApproval);
       if (!requiresApproval) {
         setCelebrationMsg(`${chore.iconEmoji}\n+${chore.value}!`);
         setCelebrating(true);

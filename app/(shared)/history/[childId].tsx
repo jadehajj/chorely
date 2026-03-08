@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 
 import { Text } from '@/components/ui/Text';
@@ -198,7 +198,7 @@ export default function ChildHistory() {
       await FileSystem.writeAsStringAsync(path, csv);
       await Sharing.shareAsync(path, {
         mimeType: 'text/csv',
-        dialogTitle: `${child.name}'s Transaction History`,
+        dialogTitle: `${child!.name}'s Transaction History`,
         UTI: 'public.comma-separated-values-text',
       });
     } catch (e: unknown) {
