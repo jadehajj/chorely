@@ -6,10 +6,16 @@ import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/services/firebase';
 import { useAuthStore } from '@/stores/authStore';
 import { startSync, stopSync } from '@/services/sync';
+import { initDb } from '@/services/offlineCache';
+import { registerForPushNotifications } from '@/services/notifications';
 import 'react-native-get-random-values';
 
 export default function RootLayout() {
   const { setAuth, clearAuth, setLoading } = useAuthStore();
+
+  useEffect(() => {
+    initDb();
+  }, []);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
@@ -19,6 +25,9 @@ export default function RootLayout() {
           const data = userDoc.data();
           setAuth(user.uid, data.role, data.familyId, data.linkedChildId);
           if (data.familyId) startSync(data.familyId);
+          if (data.role === 'parent') {
+            registerForPushNotifications().catch(() => {});
+          }
         } else {
           // New user — no user doc yet, route to paywall
           setLoading(false);
