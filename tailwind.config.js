@@ -13,9 +13,6 @@ module.exports = {
         surface: '#F9FAFB',
         'surface-dark': '#1F2937',
       },
-      fontFamily: {
-        sans: ['System'],
-      },
     },
   },
 };

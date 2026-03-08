@@ -23,7 +23,11 @@ export function getChildLimit(productId: string | null): number {
 }
 
 export async function initIAP(): Promise<void> {
-  await initConnection();
+  try {
+    await initConnection();
+  } catch {
+    // StoreKit unavailable in simulator — silently skip
+  }
 }
 
 export async function fetchProducts(): Promise<Product[]> {
