@@ -175,7 +175,7 @@ export default function Settings() {
               value={family.verificationMode === 'approval'}
               onValueChange={handleToggleVerification}
               disabled={updatingVerification}
-              trackColor={{ false: '#d1d5db', true: '#6366F1' }}
+              trackColor={{ false: '#d1d5db', true: '#FF6B6B' }}
               thumbColor="#ffffff"
             />
           </View>

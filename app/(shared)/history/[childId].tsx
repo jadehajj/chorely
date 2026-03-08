@@ -249,7 +249,7 @@ export default function ChildHistory() {
       {/* Transaction list */}
       {loading ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#6366F1" />
+          <ActivityIndicator size="large" color="#FF6B6B" />
         </View>
       ) : transactions.length === 0 ? (
         <View className="flex-1 items-center justify-center px-5">
