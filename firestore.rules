@@ -23,6 +23,10 @@ service cloud.firestore {
     match /families/{familyId}/completions/{completionId} {
       allow create: if request.auth != null &&
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'kid';
+      allow read: if request.auth != null && (
+        request.auth.uid in get(/databases/$(database)/documents/families/$(familyId)).data.parentIds ||
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'kid'
+      );
     }
   }
 }
