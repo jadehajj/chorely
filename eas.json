@@ -19,8 +19,7 @@
     },
     "production": {
       "ios": {
-        "simulator": false,
-        "googleServicesFile": "/run/secrets/GOOGLE_SERVICES_IOS"
+        "simulator": false
       }
     }
   },
