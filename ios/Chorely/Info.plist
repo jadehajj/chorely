@@ -36,12 +36,12 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>com.googleusercontent.apps.197048218459-gvvlcnsrh7hd5ft82une016skfhrfrle</string>
+				<string>com.googleusercontent.apps.197048218459-asrs7p6ghdjjo0bkls32te16mdllpf1q</string>
 			</array>
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>1</string>
+	<string>9</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>LSMinimumSystemVersion</key>

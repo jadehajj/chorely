@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
 	<key>CLIENT_ID</key>
-	<string>197048218459-gvvlcnsrh7hd5ft82une016skfhrfrle.apps.googleusercontent.com</string>
+	<string>197048218459-asrs7p6ghdjjo0bkls32te16mdllpf1q.apps.googleusercontent.com</string>
 	<key>REVERSED_CLIENT_ID</key>
-	<string>com.googleusercontent.apps.197048218459-gvvlcnsrh7hd5ft82une016skfhrfrle</string>
+	<string>com.googleusercontent.apps.197048218459-asrs7p6ghdjjo0bkls32te16mdllpf1q</string>
 	<key>API_KEY</key>
 	<string>AIzaSyDdwR9pC3BBt-o2bEXMEz4pocOlcLU5E7w</string>
 	<key>GCM_SENDER_ID</key>
@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.chorely.app</string>
+	<string>com.jadehajj.chorely</string>
 	<key>PROJECT_ID</key>
 	<string>chorely-3f512</string>
 	<key>STORAGE_BUCKET</key>
@@ -29,6 +29,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:197048218459:ios:69e9ee90b84162e90c207e</string>
+	<string>1:197048218459:ios:6c40a52baa8b66980c207e</string>
 </dict>
 </plist>

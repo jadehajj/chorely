@@ -95,8 +95,8 @@ export default function Paywall() {
       <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
         <View className="items-center py-8">
           <Text className="text-5xl mb-2">✅</Text>
-          <Text variant="h1" className="text-center">Chorely</Text>
-          <Text variant="caption" className="text-center mt-1">
+          <Text variant="h1" className="text-center dark:text-gray-900">Chorely</Text>
+          <Text variant="caption" className="text-center mt-1 dark:text-gray-600">
             Buy once. Yours forever. No subscription.
           </Text>
         </View>

@@ -27,12 +27,12 @@ export function TierCard({ title, price, description, features, isPopular, isSel
         </View>
       )}
       <View className="flex-row justify-between items-center mb-2">
-        <Text variant="h3">{title}</Text>
+        <Text variant="h3" className="dark:text-gray-900">{title}</Text>
         <Text className="text-2xl font-bold text-primary">{price}</Text>
       </View>
-      <Text variant="caption" className="mb-3">{description}</Text>
+      <Text variant="caption" className="mb-3 dark:text-gray-600">{description}</Text>
       {features.map((f) => (
-        <Text key={f} variant="caption" className="mb-1">✓ {f}</Text>
+        <Text key={f} variant="caption" className="mb-1 dark:text-gray-600">✓ {f}</Text>
       ))}
     </TouchableOpacity>
   );
