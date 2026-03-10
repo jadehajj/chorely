@@ -4,15 +4,25 @@ import { cn } from '@/utils/cn';
 
 interface Props {
   title: string;
-  price: string;
+  price: string;       // e.g. "$2.99/wk" or "$100"
+  priceNote?: string;  // e.g. "after 7-day free trial"
   description: string;
   features: string[];
-  isPopular?: boolean;
+  badge?: string;      // e.g. "Most Popular ★" — shown as a floating pill
   isSelected?: boolean;
   onPress: () => void;
 }
 
-export function TierCard({ title, price, description, features, isPopular, isSelected, onPress }: Props) {
+export function TierCard({
+  title,
+  price,
+  priceNote,
+  description,
+  features,
+  badge,
+  isSelected,
+  onPress,
+}: Props) {
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -21,16 +31,28 @@ export function TierCard({ title, price, description, features, isPopular, isSel
         isSelected ? 'border-primary bg-primary/10' : 'border-gray-200 bg-white',
       )}
     >
-      {isPopular && (
+      {/* Floating badge pill (e.g. "Most Popular ★") */}
+      {badge && (
         <View className="absolute -top-3 right-5 bg-primary px-3 py-1 rounded-full">
-          <Text className="text-white text-xs font-bold">Most Popular ★</Text>
+          <Text className="text-white text-xs font-bold">{badge}</Text>
         </View>
       )}
-      <View className="flex-row justify-between items-center mb-2">
+
+      {/* Title row + price */}
+      <View className="flex-row justify-between items-start mb-1">
         <Text variant="h3" className="dark:text-gray-900">{title}</Text>
-        <Text className="text-2xl font-bold text-primary">{price}</Text>
+
+        {/* Price stacked: big number + small period note */}
+        <View style={{ alignItems: 'flex-end' }}>
+          <Text className="text-2xl font-bold text-primary">{price}</Text>
+          {priceNote ? (
+            <Text style={{ fontSize: 10, color: '#9CA3AF', marginTop: 1 }}>{priceNote}</Text>
+          ) : null}
+        </View>
       </View>
+
       <Text variant="caption" className="mb-3 dark:text-gray-600">{description}</Text>
+
       {features.map((f) => (
         <Text key={f} variant="caption" className="mb-1 dark:text-gray-600">✓ {f}</Text>
       ))}

@@ -1,50 +1,107 @@
-import { View, SafeAreaView } from 'react-native';
+import { View, SafeAreaView, StatusBar } from 'react-native';
 import { router } from 'expo-router';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
 
 export default function Welcome() {
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+      <StatusBar barStyle="dark-content" />
 
-      {/* Hero illustration */}
-      <View className="flex-1 items-center justify-center px-8">
-        <View className="items-center mb-10">
-          <Text className="text-8xl mb-2">🏠</Text>
-          <View className="flex-row items-end gap-x-1">
-            <Text className="text-5xl">👩</Text>
-            <Text className="text-5xl">👨</Text>
-            <Text className="text-4xl mb-1">👧</Text>
-            <Text className="text-3xl mb-2">👦</Text>
-          </View>
+      {/* ── Hero ── */}
+      <View
+        style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}
+      >
+        {/* Branded logo badge */}
+        <View
+          style={{
+            width: 88,
+            height: 88,
+            borderRadius: 28,
+            backgroundColor: '#FF6B6B',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: 24,
+            shadowColor: '#FF6B6B',
+            shadowOpacity: 0.35,
+            shadowRadius: 20,
+            shadowOffset: { width: 0, height: 8 },
+            elevation: 8,
+          }}
+        >
+          <Text style={{ fontSize: 44 }}>🏠</Text>
         </View>
 
         <Text
-          variant="h1"
-          className="text-center text-gray-900 mb-3"
-          style={{ fontSize: 36, fontWeight: '800' }}
+          style={{
+            fontSize: 34,
+            fontWeight: '800',
+            color: '#111827',
+            textAlign: 'center',
+            marginBottom: 8,
+            letterSpacing: -0.5,
+          }}
         >
-          Chorely
+          Welcome to Chorely
+        </Text>
+        <Text
+          style={{
+            fontSize: 17,
+            color: '#6B7280',
+            textAlign: 'center',
+            lineHeight: 26,
+            marginBottom: 40,
+          }}
+        >
+          How would you like to get started?
         </Text>
 
-        <Text variant="body" className="text-center text-gray-500 leading-6" style={{ maxWidth: 280 }}>
-          Make chores fun, celebrate effort, and build great habits together.
-        </Text>
+        {/* Family illustration card */}
+        <View
+          style={{
+            backgroundColor: '#FFF5F5',
+            borderRadius: 24,
+            paddingVertical: 20,
+            paddingHorizontal: 24,
+            flexDirection: 'row',
+            gap: 12,
+            alignItems: 'flex-end',
+          }}
+        >
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 36 }}>👩</Text>
+            <Text style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>Mum</Text>
+          </View>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 36 }}>👨</Text>
+            <Text style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>Dad</Text>
+          </View>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 30 }}>👧</Text>
+            <Text style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>Emma</Text>
+          </View>
+          <View style={{ alignItems: 'center' }}>
+            <Text style={{ fontSize: 26 }}>👦</Text>
+            <Text style={{ fontSize: 10, color: '#9CA3AF', marginTop: 2 }}>Jake</Text>
+          </View>
+          <View style={{ alignItems: 'center', marginLeft: 4, marginBottom: 2 }}>
+            <Text style={{ fontSize: 22 }}>✨</Text>
+          </View>
+        </View>
       </View>
 
-      {/* CTAs */}
-      <View className="px-6 pb-12 gap-y-3">
+      {/* ── Actions ── */}
+      <View style={{ paddingHorizontal: 24, paddingBottom: 40, gap: 12 }}>
         <Button
-          title="Create New Family"
+          title="🏠   Create My Family"
           onPress={() => router.push('/(auth)/onboarding')}
         />
         <Button
-          title="Join Existing Family"
+          title="Join an Existing Family"
           variant="secondary"
           onPress={() => router.push('/(auth)/join-family')}
         />
       </View>
-
     </SafeAreaView>
   );
 }

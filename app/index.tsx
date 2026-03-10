@@ -56,7 +56,7 @@ export default function Index() {
   if (SCREENSHOT_MODE && uid) return <Redirect href={SCREEN_MAP[SCREENSHOT_SCREEN] as any} />;
 
   if (isLoading) return null;
-  if (!uid) return <Redirect href="/(auth)/paywall" />;
+  if (!uid) return <Redirect href="/(auth)/explainer" />;
 
   // Parent with no family yet → guide them through setup
   if (role === 'parent' && !familyId) return <Redirect href="/(auth)/welcome" />;

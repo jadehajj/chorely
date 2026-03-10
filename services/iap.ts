@@ -9,7 +9,7 @@ import {
 } from 'react-native-iap';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase';
-import { TIER_LIMITS } from '@/constants/theme';
+import { TIER_LIMITS, TIER_IS_SUBSCRIPTION } from '@/constants/theme';
 
 export const PRODUCT_IDS = [
   'com.chorely.starter',
@@ -31,12 +31,16 @@ export async function initIAP(): Promise<void> {
 }
 
 export async function fetchProducts(): Promise<Product[]> {
-  return ((await iapFetchProducts({ skus: PRODUCT_IDS })) ?? []) as Product[];
+  // 'all' fetches both subscription products (Starter, Family) and
+  // one-time in-app purchases (Unlimited Lifetime) in a single call.
+  return ((await iapFetchProducts({ skus: PRODUCT_IDS, type: 'all' })) ?? []) as Product[];
 }
 
 export async function purchaseTier(productId: string): Promise<Purchase | null> {
+  // Starter and Family are auto-renewing subscriptions; Unlimited is a one-time purchase.
+  const isSub = TIER_IS_SUBSCRIPTION[productId as keyof typeof TIER_IS_SUBSCRIPTION] ?? false;
   const result = await requestPurchase({
-    type: 'in-app',
+    type: isSub ? 'subs' : 'in-app',
     request: {
       apple: { sku: productId },
       google: { skus: [productId] },
