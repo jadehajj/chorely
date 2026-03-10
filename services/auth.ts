@@ -11,8 +11,13 @@ import * as Crypto from 'expo-crypto';
 import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { auth, db } from '@/services/firebase';
 
+// On iOS the client ID is read automatically from GoogleService-Info.plist.
+// webClientId (serverClientID) is only needed for server-side auth code flows;
+// passing an iOS client ID here breaks the OAuth flow on Google's servers.
 GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+  ...(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID
+    ? { webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID }
+    : {}),
 });
 
 function generateNonce(length: number = 32): string {
