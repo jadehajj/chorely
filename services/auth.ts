@@ -74,6 +74,12 @@ export async function signOutUser(): Promise<void> {
 }
 
 async function ensureUserDoc(uid: string, role: 'parent' | 'kid'): Promise<void> {
+  // Force the Firestore SDK to pick up the newly-issued auth token before
+  // making any read/write. Without this, the first Firestore call can race
+  // against token propagation and fail with "Missing or insufficient permissions".
+  if (auth.currentUser) {
+    await auth.currentUser.getIdToken(/* forceRefresh */ true);
+  }
   const ref = doc(db, 'users', uid);
   const snap = await getDoc(ref);
   if (!snap.exists()) {
