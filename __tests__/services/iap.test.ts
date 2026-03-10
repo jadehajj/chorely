@@ -14,8 +14,8 @@ describe('getChildLimit', () => {
   it('returns 1 for starter', () => {
     expect(getChildLimit('com.chorely.starter')).toBe(1);
   });
-  it('returns 3 for family', () => {
-    expect(getChildLimit('com.chorely.family')).toBe(3);
+  it('returns 2 for family', () => {
+    expect(getChildLimit('com.chorely.family')).toBe(2);
   });
   it('returns Infinity for unlimited', () => {
     expect(getChildLimit('com.chorely.unlimited')).toBe(Infinity);
