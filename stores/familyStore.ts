@@ -9,6 +9,8 @@ export interface Child {
   rewardEmoji: string;
   balance: number;
   linkedDeviceId: string | null;
+  birthYear?: number;
+  birthMonth?: number;
 }
 
 export interface Family {

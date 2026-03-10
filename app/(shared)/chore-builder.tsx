@@ -15,7 +15,8 @@ const SCHEDULES = [
 ];
 
 export default function ChoreBuilder() {
-  const { choreId } = useLocalSearchParams<{ choreId?: string }>();
+  // Bug #8 fix: accept childId param so the caller can pre-select a child
+  const { choreId, childId: paramChildId } = useLocalSearchParams<{ choreId?: string; childId?: string }>();
   const { family, children } = useFamilyStore();
   const { chores } = useChoresStore();
   const existing = choreId ? chores.find((c) => c.id === choreId) : null;
@@ -24,23 +25,37 @@ export default function ChoreBuilder() {
   const [icon, setIcon] = useState(existing?.iconEmoji ?? '🧹');
   const [schedule, setSchedule] = useState(existing?.schedule ?? 'daily');
   const [value, setValue] = useState(String(existing?.value ?? '1'));
-  const [assignedChildId, setAssignedChildId] = useState(existing?.assignedChildId ?? children[0]?.id ?? '');
+  // Bug #8 fix: prefer paramChildId over children[0] when creating a new chore
+  const [assignedChildId, setAssignedChildId] = useState(
+    existing?.assignedChildId ?? paramChildId ?? children[0]?.id ?? '',
+  );
   const [requiresApproval, setRequiresApproval] = useState(existing?.requiresApproval ?? false);
   const [loading, setLoading] = useState(false);
 
   const assignedChild = children.find((c) => c.id === assignedChildId);
+  // Bug #20 fix: family-level approval mode makes the per-chore toggle redundant
+  const familyAlwaysApproves = family?.verificationMode === 'approval';
 
   async function handleSave() {
     if (!family || !name.trim() || !assignedChildId) return;
+
+    // Bug #22 fix: disallow zero or negative reward values
+    const numValue = parseFloat(value);
+    if (isNaN(numValue) || numValue <= 0) {
+      Alert.alert('Invalid value', 'Reward value must be greater than 0.');
+      return;
+    }
+
     setLoading(true);
     try {
       const data = {
         name: name.trim(),
         iconEmoji: icon,
         schedule,
-        value: parseFloat(value) || 0,
+        value: numValue,
         assignedChildId,
-        requiresApproval,
+        // When family already requires approval for all chores, store true for consistency
+        requiresApproval: familyAlwaysApproves ? true : requiresApproval,
       };
       if (existing) {
         await updateChore(family.id, existing.id, data);
@@ -124,17 +139,32 @@ export default function ChoreBuilder() {
           keyboardType="decimal-pad"
         />
 
-        <View className="flex-row items-center justify-between mb-8">
-          <View className="flex-1">
-            <Text variant="label">Require my approval</Text>
-            <Text variant="caption">Balance updates only after you approve</Text>
+        {/* Bug #20 fix: info banner replaces the Switch when family always requires approval */}
+        {familyAlwaysApproves ? (
+          <View className="flex-row items-start bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-8">
+            <Text className="text-xl mr-3">ℹ️</Text>
+            <View className="flex-1">
+              <Text variant="label" style={{ color: '#1D4ED8' }} className="mb-1">
+                Approval required for all chores
+              </Text>
+              <Text variant="caption" style={{ color: '#2563EB' }}>
+                Your family requires parent approval on every chore. You can change this in Settings.
+              </Text>
+            </View>
           </View>
-          <Switch
-            value={requiresApproval}
-            onValueChange={setRequiresApproval}
-            trackColor={{ true: '#FF6B6B' }}
-          />
-        </View>
+        ) : (
+          <View className="flex-row items-center justify-between mb-8">
+            <View className="flex-1">
+              <Text variant="label">Require my approval</Text>
+              <Text variant="caption">Balance updates only after you approve</Text>
+            </View>
+            <Switch
+              value={requiresApproval}
+              onValueChange={setRequiresApproval}
+              trackColor={{ true: '#FF6B6B' }}
+            />
+          </View>
+        )}
 
         <Button title="Save Chore" onPress={handleSave} loading={loading} className="mb-8" />
       </ScrollView>

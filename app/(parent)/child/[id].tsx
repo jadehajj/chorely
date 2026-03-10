@@ -1,4 +1,8 @@
-import { View, ScrollView, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
+import { useState } from 'react';
+import {
+  View, ScrollView, SafeAreaView, TouchableOpacity, Alert,
+  Modal, TextInput, KeyboardAvoidingView, Platform,
+} from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Text } from '@/components/ui/Text';
 import { Button } from '@/components/ui/Button';
@@ -7,13 +11,18 @@ import { useFamilyStore } from '@/stores/familyStore';
 import { useChoresStore } from '@/stores/choresStore';
 import { useCompletionsStore } from '@/stores/completionsStore';
 import { formatBalance, formatReward } from '@/utils/formatReward';
-import { approveCompletion, rejectCompletion, adjustBalance } from '@/services/firestore';
+import { approveCompletion, rejectCompletion, adjustBalance, deleteChore } from '@/services/firestore';
 
 export default function ChildDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { family, children } = useFamilyStore();
   const { chores } = useChoresStore();
   const { completions } = useCompletionsStore();
+
+  // Bug #13 fix: Modal state replaces the 3-chained Alert.prompt
+  const [adjustModalVisible, setAdjustModalVisible] = useState(false);
+  const [adjustAmount, setAdjustAmount] = useState('');
+  const [adjustLoading, setAdjustLoading] = useState(false);
 
   const child = children.find((c) => c.id === id);
   if (!child || !family) return null;
@@ -41,36 +50,55 @@ export default function ChildDetail() {
     });
   }
 
-  function handleManualAdjust() {
-    Alert.alert('Manual Adjustment', 'Use + or − buttons', [
-      {
-        text: '+ Add', onPress: () => {
-          Alert.prompt('Add amount', '', async (v) => {
-            const amount = parseFloat(v ?? '0');
-            if (isNaN(amount) || amount <= 0) return;
+  // Bug #13 fix: execute adjustment from Modal input
+  async function executeAdjust(isAdd: boolean) {
+    const amount = parseFloat(adjustAmount);
+    if (isNaN(amount) || amount <= 0) {
+      Alert.alert('Invalid amount', 'Please enter a positive number.');
+      return;
+    }
+    setAdjustLoading(true);
+    try {
+      await adjustBalance(
+        family!.id,
+        id,
+        isAdd ? amount : -amount,
+        isAdd ? 'Manual bonus' : 'Manual deduction',
+      );
+      setAdjustModalVisible(false);
+      setAdjustAmount('');
+    } catch (e: unknown) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Adjustment failed.');
+    } finally {
+      setAdjustLoading(false);
+    }
+  }
+
+  function closeAdjustModal() {
+    setAdjustModalVisible(false);
+    setAdjustAmount('');
+  }
+
+  // Bug #10 fix: delete chore with confirmation Alert
+  function handleDeleteChore(choreId: string, choreName: string) {
+    Alert.alert(
+      'Delete chore',
+      `Remove "${choreName}" from ${child!.name}'s chores? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
             try {
-              await adjustBalance(family!.id, id, amount, 'Manual bonus');
+              await deleteChore(family!.id, choreId);
             } catch (e: unknown) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Adjustment failed.');
+              Alert.alert('Error', e instanceof Error ? e.message : 'Could not delete chore.');
             }
-          });
+          },
         },
-      },
-      {
-        text: '− Deduct', onPress: () => {
-          Alert.prompt('Deduct amount', '', async (v) => {
-            const amount = parseFloat(v ?? '0');
-            if (isNaN(amount) || amount <= 0) return;
-            try {
-              await adjustBalance(family!.id, id, -amount, 'Manual deduction');
-            } catch (e: unknown) {
-              Alert.alert('Error', e instanceof Error ? e.message : 'Adjustment failed.');
-            }
-          });
-        },
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+      ],
+    );
   }
 
   return (
@@ -96,9 +124,10 @@ export default function ChildDetail() {
           <Text className="text-5xl font-bold text-primary">
             {formatBalance(child, child.balance, family.currency)}
           </Text>
+          {/* Bug #13 fix: opens Modal instead of chained Alert.prompt */}
           <TouchableOpacity
             className="mt-4 bg-gray-100 px-4 py-2 rounded-full"
-            onPress={handleManualAdjust}
+            onPress={() => setAdjustModalVisible(true)}
           >
             <Text variant="caption">Manual Adjustment</Text>
           </TouchableOpacity>
@@ -136,23 +165,41 @@ export default function ChildDetail() {
         )}
 
         {/* Chores list */}
+        {/* Bug #10 fix: each row now has an Edit + Delete button */}
         <Text variant="h3" className="mb-3">Chores</Text>
         {childChores.map((chore) => (
-          <Card key={chore.id} className="mb-2 flex-row items-center justify-between">
-            <View className="flex-row items-center flex-1">
+          <Card key={chore.id} className="mb-2">
+            <View className="flex-row items-center">
               <Text className="text-2xl mr-3">{chore.iconEmoji}</Text>
-              <View>
+              <View className="flex-1">
                 <Text variant="label">{chore.name}</Text>
-                <Text variant="caption">{chore.schedule} · {formatReward(child, chore.value, family.currency)}</Text>
+                <Text variant="caption">
+                  {chore.schedule} · {formatReward(child, chore.value, family.currency)}
+                </Text>
               </View>
+              <TouchableOpacity
+                onPress={() =>
+                  router.push({ pathname: '/(shared)/chore-builder', params: { choreId: chore.id } })
+                }
+                className="px-2 py-1 mr-1"
+              >
+                <Text variant="caption" className="text-primary">Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => handleDeleteChore(chore.id, chore.name)}
+                className="px-2 py-1"
+              >
+                <Text style={{ color: '#EF4444', fontSize: 12, fontWeight: '600' }}>Delete</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              onPress={() => router.push({ pathname: '/(shared)/chore-builder', params: { choreId: chore.id } })}
-            >
-              <Text variant="caption" className="text-primary">Edit</Text>
-            </TouchableOpacity>
           </Card>
         ))}
+
+        {childChores.length === 0 && (
+          <Text variant="caption" className="text-center text-gray-400 mb-4">
+            No chores assigned yet.
+          </Text>
+        )}
 
         <Button
           title="View History"
@@ -161,6 +208,65 @@ export default function ChildDetail() {
           className="mt-4 mb-8"
         />
       </ScrollView>
+
+      {/* Bug #13 fix: Manual adjustment bottom-sheet Modal */}
+      <Modal
+        visible={adjustModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={closeAdjustModal}
+      >
+        <KeyboardAvoidingView
+          className="flex-1"
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <TouchableOpacity
+            className="flex-1 bg-black/40"
+            activeOpacity={1}
+            onPress={closeAdjustModal}
+          />
+          <View className="bg-white rounded-t-3xl px-6 pt-6 pb-10">
+            <View className="flex-row items-center mb-1">
+              <Text className="text-3xl mr-2">{child.avatarEmoji}</Text>
+              <Text variant="h3">{child.name} — Adjust Balance</Text>
+            </View>
+            <Text variant="caption" className="mb-5">
+              Current: {formatBalance(child, child.balance, family.currency)}
+            </Text>
+
+            <Text variant="label" className="mb-2">Amount</Text>
+            <TextInput
+              className="border border-gray-200 rounded-2xl px-4 h-14 text-xl text-gray-900 mb-6"
+              placeholder={child.rewardMode === 'emoji' ? '5' : '2.00'}
+              value={adjustAmount}
+              onChangeText={setAdjustAmount}
+              keyboardType="decimal-pad"
+              autoFocus
+            />
+
+            <View className="flex-row gap-x-3 mb-3">
+              <Button
+                title="− Deduct"
+                variant="danger"
+                className="flex-1"
+                loading={adjustLoading}
+                onPress={() => executeAdjust(false)}
+              />
+              <Button
+                title="+ Add"
+                variant="primary"
+                className="flex-1"
+                loading={adjustLoading}
+                onPress={() => executeAdjust(true)}
+              />
+            </View>
+
+            <TouchableOpacity onPress={closeAdjustModal} className="items-center py-2">
+              <Text variant="caption" className="text-gray-400">Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }

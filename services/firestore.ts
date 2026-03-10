@@ -1,5 +1,5 @@
 import {
-  collection, doc, addDoc, setDoc, updateDoc,
+  collection, doc, addDoc, setDoc, updateDoc, deleteDoc,
   onSnapshot, query, where, orderBy, serverTimestamp,
   getDoc, getDocs, writeBatch, arrayUnion, increment, Unsubscribe,
 } from 'firebase/firestore';
@@ -63,6 +63,34 @@ export function subscribeToFamily(familyId: string): Unsubscribe[] {
   );
 
   return unsubs;
+}
+
+// Create a new family document and link the creator as the first parent.
+// Returns the new family's Firestore ID.
+export async function createFamily(
+  uid: string,
+  name: string,
+  tierProductId: string,
+): Promise<string> {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const arr = new Uint8Array(4);
+  crypto.getRandomValues(arr);
+  const code = 'CHORELY-' + Array.from(arr).map((b) => chars[b % 36]).join('');
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours — matches generateJoinCode
+
+  const familyRef = await addDoc(collection(db, 'families'), {
+    name,
+    joinCode: code,
+    joinCodeExpiresAt: expiresAt,
+    verificationMode: 'self',
+    currency: 'AUD',
+    tierProductId,
+    parentIds: [uid],
+    createdAt: serverTimestamp(),
+  });
+
+  await updateDoc(doc(db, 'users', uid), { familyId: familyRef.id });
+  return familyRef.id;
 }
 
 // Chores CRUD
@@ -205,7 +233,8 @@ export async function generateJoinCode(familyId: string): Promise<string> {
   return code;
 }
 
-export async function joinFamily(uid: string, code: string): Promise<void> {
+// Join an existing family as a second parent. Returns the familyId on success.
+export async function joinFamily(uid: string, code: string): Promise<string> {
   // Prevent joining a second family
   const existingUser = await getDoc(doc(db, 'users', uid));
   if (existingUser.exists() && existingUser.data().familyId) {
@@ -226,6 +255,8 @@ export async function joinFamily(uid: string, code: string): Promise<void> {
   });
   batch.set(doc(db, 'users', uid), { familyId: family.id, role: 'parent', linkedChildId: null }, { merge: true });
   await batch.commit();
+
+  return family.id;
 }
 
 export async function generateKidDeviceCode(familyId: string, childId: string): Promise<string> {
@@ -237,7 +268,11 @@ export async function generateKidDeviceCode(familyId: string, childId: string): 
   return code;
 }
 
-export async function redeemKidCode(uid: string, code: string): Promise<void> {
+// Redeem a 6-digit kid device code. Returns the familyId + childId on success.
+export async function redeemKidCode(
+  uid: string,
+  code: string,
+): Promise<{ familyId: string; childId: string }> {
   const codeSnap = await getDoc(doc(db, 'kidCodes', code));
   if (!codeSnap.exists()) throw new Error('Invalid code');
   const data = codeSnap.data();
@@ -256,4 +291,49 @@ export async function redeemKidCode(uid: string, code: string): Promise<void> {
   batch.update(doc(db, 'families', data.familyId, 'children', data.childId), { linkedDeviceId: uid });
   batch.delete(doc(db, 'kidCodes', code));
   await batch.commit();
+
+  return { familyId: data.familyId, childId: data.childId };
+}
+
+// ─── Child CRUD ───────────────────────────────────────────────────────────────
+
+export async function addChild(
+  familyId: string,
+  data: {
+    name: string;
+    avatarEmoji: string;
+    colorTheme: string;
+    rewardMode: 'money' | 'emoji';
+    rewardEmoji: string;
+    birthYear?: number | null;
+  },
+): Promise<string> {
+  const { birthYear, ...rest } = data;
+  const ref = await addDoc(collection(db, 'families', familyId, 'children'), {
+    ...rest,
+    ...(birthYear ? { birthYear } : {}),
+    balance: 0,
+    linkedDeviceId: null,
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+export async function updateChild(
+  familyId: string,
+  childId: string,
+  updates: Partial<{
+    name: string;
+    avatarEmoji: string;
+    colorTheme: string;
+    rewardMode: 'money' | 'emoji';
+    rewardEmoji: string;
+    birthYear: number | null;
+  }>,
+): Promise<void> {
+  await updateDoc(doc(db, 'families', familyId, 'children', childId), updates);
+}
+
+export async function deleteChild(familyId: string, childId: string): Promise<void> {
+  await deleteDoc(doc(db, 'families', familyId, 'children', childId));
 }

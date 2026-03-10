@@ -6,12 +6,11 @@ import { ChoreCard } from '@/components/kid/ChoreCard';
 import { CelebrationOverlay } from '@/components/kid/CelebrationOverlay';
 import { useAuthStore } from '@/stores/authStore';
 import { useFamilyStore } from '@/stores/familyStore';
-import { useChoresStore } from '@/stores/choresStore';
-import { useCompletionsStore } from '@/stores/completionsStore';
+import { useChoresStore, type Chore } from '@/stores/choresStore';
+import { useCompletionsStore, type Completion } from '@/stores/completionsStore';
 import { submitCompletion } from '@/services/firestore';
 import { uploadCompletionPhoto } from '@/services/photoUpload';
-import { formatBalance } from '@/utils/formatReward';
-import { Chore } from '@/stores/choresStore';
+import { formatBalance, formatReward } from '@/utils/formatReward';
 
 export default function KidView() {
   const { linkedChildId } = useAuthStore();
@@ -26,9 +25,28 @@ export default function KidView() {
   if (!child || !family) return null;
 
   const myChores = chores.filter((c) => c.assignedChildId === linkedChildId);
-  const todayCompletions = completions.filter(
-    (c) => c.childId === linkedChildId && isToday(c.submittedAt)
-  );
+  const myCompletions = completions.filter((c) => c.childId === linkedChildId);
+
+  // ── Schedule-aware completion lookup ────────────────────────────────────────
+  // daily  → relevant window = today
+  // weekly → relevant window = this calendar week (Sun–Sat)
+  // once   → any completion ever (approved blocks re-submission)
+  function getRelevantCompletion(chore: Chore): Completion | undefined {
+    const choreCompletions = myCompletions
+      .filter((c) => c.choreId === chore.id)
+      .sort((a, b) => b.submittedAt.getTime() - a.submittedAt.getTime()); // newest first
+
+    if (chore.schedule === 'daily') {
+      return choreCompletions.find((c) => isToday(c.submittedAt));
+    }
+    if (chore.schedule === 'weekly') {
+      return choreCompletions.find((c) => isThisWeek(c.submittedAt));
+    }
+    // 'once': return the most recent completion ever so the card shows its status
+    return choreCompletions[0];
+  }
+
+  // ── Handlers ────────────────────────────────────────────────────────────────
 
   async function handleChoreComplete(chore: Chore, source: 'camera' | 'library' | 'none') {
     const requiresApproval = family!.verificationMode === 'approval' || chore.requiresApproval;
@@ -66,7 +84,10 @@ export default function KidView() {
     try {
       await submitCompletion(family!.id, chore.id, child!.id, photoUrl, requiresApproval);
       if (!requiresApproval) {
-        setCelebrationMsg(`${chore.iconEmoji}\n+${chore.value}!`);
+        // Bug #19 fix: use formatReward so emoji-mode kids see "5 ⭐" not "5"
+        setCelebrationMsg(
+          `${chore.iconEmoji}\n+${formatReward(child!, chore.value, family!.currency)}!`,
+        );
         setCelebrating(true);
       } else {
         Alert.alert('Submitted!', 'Waiting for Mum or Dad to approve 👍');
@@ -77,8 +98,9 @@ export default function KidView() {
   }
 
   async function handleChorePress(chore: Chore) {
-    const existing = todayCompletions.find((c) => c.choreId === chore.id);
-    if (existing) return;
+    const existing = getRelevantCompletion(chore);
+    // Bug #3 fix: block pending/approved; allow retry if rejected
+    if (existing && existing.status !== 'rejected') return;
 
     const requiresApproval = family!.verificationMode === 'approval' || chore.requiresApproval;
 
@@ -97,6 +119,8 @@ export default function KidView() {
       await handleChoreComplete(chore, 'none');
     }
   }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
@@ -119,8 +143,9 @@ export default function KidView() {
         </View>
 
         <Text variant="h3" className="mb-4">Today's Chores</Text>
+
         {myChores.map((chore) => {
-          const completion = todayCompletions.find((c) => c.choreId === chore.id);
+          const completion = getRelevantCompletion(chore);
           return (
             <ChoreCard
               key={chore.id}
@@ -132,8 +157,9 @@ export default function KidView() {
         })}
 
         {myChores.length === 0 && (
-          <Text variant="caption" className="text-center mt-8">No chores today! 🎉</Text>
+          <Text variant="caption" className="text-center mt-8">No chores assigned yet! 🎉</Text>
         )}
+
         <View className="h-8" />
       </ScrollView>
 
@@ -146,6 +172,17 @@ export default function KidView() {
   );
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
 function isToday(date: Date): boolean {
   return date.toDateString() === new Date().toDateString();
+}
+
+function isThisWeek(date: Date): boolean {
+  const now = new Date();
+  const startOfWeek = new Date(now);
+  // Week starts on Sunday (getDay() = 0)
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+  return date >= startOfWeek;
 }

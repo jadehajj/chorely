@@ -51,13 +51,17 @@ const SCREEN_MAP: Record<string, string> = {
 
 export default function Index() {
   useSeedDemoData();
-  const { uid, role, linkedChildId, isLoading } = useAuthStore();
+  const { uid, role, familyId, linkedChildId, isLoading } = useAuthStore();
 
   if (SCREENSHOT_MODE && uid) return <Redirect href={SCREEN_MAP[SCREENSHOT_SCREEN] as any} />;
 
   if (isLoading) return null;
   if (!uid) return <Redirect href="/(auth)/paywall" />;
+
+  // Parent with no family yet → guide them through setup
+  if (role === 'parent' && !familyId) return <Redirect href="/(auth)/welcome" />;
   if (role === 'parent') return <Redirect href="/(parent)/dashboard" />;
+
   if (role === 'kid' && linkedChildId) return <Redirect href="/(kid)/view" />;
   if (role === 'kid') return <Redirect href="/(kid)/entry" />;
 

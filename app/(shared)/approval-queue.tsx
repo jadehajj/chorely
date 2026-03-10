@@ -72,8 +72,8 @@ function CompletionCard({ item, family, onApprove, onReject, approving }: Comple
         </View>
       </View>
 
-      {/* Photo proof */}
-      {completion.photoUrl !== null && (
+      {/* Photo proof — guard both null and empty string */}
+      {!!completion.photoUrl && (
         <Image
           source={{ uri: completion.photoUrl }}
           className="w-full h-48 rounded-2xl mb-3"
