@@ -27,7 +27,8 @@
         "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "chorely-3f512",
         "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "chorely-3f512.firebasestorage.app",
         "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "197048218459",
-        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:197048218459:ios:6c40a52baa8b66980c207e"
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:197048218459:ios:6c40a52baa8b66980c207e",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "197048218459-5omvpkltssk3cqfr46loi579pg57acef.apps.googleusercontent.com"
       }
     }
   },
