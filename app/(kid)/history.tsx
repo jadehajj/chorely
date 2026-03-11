@@ -76,7 +76,7 @@ export default function KidHistory() {
 
         {!loading && transactions.length === 0 && (
           <View className="items-center mt-16">
-            <Text className="text-5xl mb-4">📋</Text>
+            <Text style={{ fontSize: 48, lineHeight: 64 }} className="mb-4">📋</Text>
             <Text variant="h3" className="text-center text-gray-700 mb-2">No transactions yet</Text>
             <Text variant="caption" className="text-center text-gray-500">
               Complete chores to start building your history!

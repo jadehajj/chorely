@@ -180,7 +180,7 @@ export default function ApprovalQueue() {
         {/* Empty state */}
         {pendingItems.length === 0 && (
           <View className="flex-1 items-center justify-center py-24">
-            <Text className="text-5xl mb-4">🎉</Text>
+            <Text style={{ fontSize: 48, lineHeight: 64 }} className="mb-4">🎉</Text>
             <Text variant="h3" className="text-center">
               Nothing to review
             </Text>

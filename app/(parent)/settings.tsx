@@ -51,7 +51,7 @@ export default function Settings() {
           <Text variant="h2" className="text-gray-900">Settings</Text>
         </View>
         <View className="flex-1 items-center justify-center px-8">
-          <Text className="text-5xl mb-4">⚙️</Text>
+          <Text style={{ fontSize: 48, lineHeight: 64 }} className="mb-4">⚙️</Text>
           <Text variant="h3" className="text-center text-gray-900 mb-2">Family Not Set Up</Text>
           <Text variant="caption" className="text-center text-gray-500">
             Complete your family setup to access settings.

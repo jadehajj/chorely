@@ -121,7 +121,7 @@ export default function ChildDetail() {
         {/* Balance card */}
         <Card className="items-center py-8 mb-4">
           <Text variant="caption" className="mb-1">Current Balance</Text>
-          <Text className="text-5xl font-bold text-primary">
+          <Text className="font-bold text-primary" style={{ fontSize: 48, lineHeight: 64 }}>
             {formatBalance(child, child.balance, family.currency)}
           </Text>
           {/* Bug #13 fix: opens Modal instead of chained Alert.prompt */}

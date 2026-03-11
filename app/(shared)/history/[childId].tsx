@@ -253,7 +253,7 @@ export default function ChildHistory() {
         </View>
       ) : transactions.length === 0 ? (
         <View className="flex-1 items-center justify-center px-5">
-          <Text className="text-6xl mb-4">🪙</Text>
+          <Text style={{ fontSize: 60, lineHeight: 78 }} className="mb-4">🪙</Text>
           <Text variant="h3" className="mb-2 text-center">No transactions yet</Text>
           <Text variant="caption" className="text-center">
             Completed chores and balance adjustments will appear here.

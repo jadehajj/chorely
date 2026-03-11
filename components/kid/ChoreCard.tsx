@@ -34,7 +34,7 @@ export function ChoreCard({ chore, completion, onPress, rewardLabel }: Props) {
       ].join(' ')}
       activeOpacity={isDisabled ? 1 : 0.7}
     >
-      <Text className="text-5xl mb-3">{chore.iconEmoji}</Text>
+      <Text style={{ fontSize: 48, lineHeight: 64 }} className="mb-3">{chore.iconEmoji}</Text>
       <Text variant="h3" className="mb-1">{chore.name}</Text>
 
       {isDone && <Text className="text-green-600 font-semibold">✓ Done!</Text>}

@@ -128,7 +128,7 @@ export default function Dashboard() {
         {/* Bug #24 fix: empty state with direct "Add Child" action button */}
         {children.length === 0 ? (
           <View className="bg-white rounded-3xl p-8 items-center mb-4 border border-gray-100">
-            <Text className="text-5xl mb-3">👶</Text>
+            <Text style={{ fontSize: 48, lineHeight: 64 }} className="mb-3">👶</Text>
             <Text variant="h3" className="text-gray-900 text-center mb-1">No kids yet</Text>
             <Text variant="caption" className="text-center text-gray-500 mb-5">
               Add your first child to start assigning chores and tracking rewards.

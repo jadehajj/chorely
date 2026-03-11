@@ -139,7 +139,7 @@ export default function KidView() {
 
       <ScrollView className="flex-1 px-5">
         <View className="items-center py-8">
-          <Text className="text-6xl mb-3">{child.avatarEmoji}</Text>
+          <Text style={{ fontSize: 60, lineHeight: 78 }} className="mb-3">{child.avatarEmoji}</Text>
           <Text variant="h2">{child.name}</Text>
           <Text className="text-4xl font-bold text-primary mt-2">
             {formatBalance(child, child.balance, family.currency)}
