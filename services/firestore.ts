@@ -7,6 +7,7 @@ import { db } from '@/services/firebase';
 import { useFamilyStore } from '@/stores/familyStore';
 import { useChoresStore } from '@/stores/choresStore';
 import { useCompletionsStore } from '@/stores/completionsStore';
+import { TIER_PARENT_LIMITS, ANNUAL_TO_BASE_TIER } from '@/constants/theme';
 
 // Subscribe to all family data (call once after login)
 export function subscribeToFamily(familyId: string): Unsubscribe[] {
@@ -66,7 +67,7 @@ export function subscribeToFamily(familyId: string): Unsubscribe[] {
 }
 
 // Create a new family document and link the creator as the first parent.
-// Returns the new family's Firestore ID.
+// Uses writeBatch so both writes succeed or both fail — no partial state.
 export async function createFamily(
   uid: string,
   name: string,
@@ -76,9 +77,12 @@ export async function createFamily(
   const arr = new Uint8Array(4);
   crypto.getRandomValues(arr);
   const code = 'CHORELY-' + Array.from(arr).map((b) => chars[b % 36]).join('');
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours — matches generateJoinCode
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  const familyRef = await addDoc(collection(db, 'families'), {
+  // Pre-generate the family ref so the batch can reference its ID.
+  const familyRef = doc(collection(db, 'families'));
+  const batch = writeBatch(db);
+  batch.set(familyRef, {
     name,
     joinCode: code,
     joinCodeExpiresAt: expiresAt,
@@ -88,8 +92,8 @@ export async function createFamily(
     parentIds: [uid],
     createdAt: serverTimestamp(),
   });
-
-  await updateDoc(doc(db, 'users', uid), { familyId: familyRef.id });
+  batch.set(doc(db, 'users', uid), { familyId: familyRef.id }, { merge: true });
+  await batch.commit();
   return familyRef.id;
 }
 
@@ -249,6 +253,13 @@ export async function joinFamily(uid: string, code: string): Promise<string> {
   const data = family.data();
   if (new Date() > data.joinCodeExpiresAt.toDate()) throw new Error('Code has expired');
 
+  // Check parent limit for the family's current tier (handles annual product IDs too)
+  const baseTierKey = (ANNUAL_TO_BASE_TIER[data.tierProductId] ?? data.tierProductId) as keyof typeof TIER_PARENT_LIMITS;
+  const parentLimit = TIER_PARENT_LIMITS[baseTierKey] ?? 1;
+  if ((data.parentIds ?? []).length >= parentLimit) {
+    throw new Error('This family has reached the maximum number of parents for its plan. Ask the owner to upgrade.');
+  }
+
   const batch = writeBatch(db);
   batch.update(doc(db, 'families', family.id), {
     parentIds: arrayUnion(uid),
@@ -334,6 +345,38 @@ export async function updateChild(
   await updateDoc(doc(db, 'families', familyId, 'children', childId), updates);
 }
 
+// Delete a child with full cascade:
+// 1. Deactivates all their assigned chores (soft delete — keeps completion history intact)
+// 2. Unlinks their device's user document so the kid device reverts to the onboarding flow
+// 3. Deletes the child document
+// All three writes are batched for atomicity.
 export async function deleteChild(familyId: string, childId: string): Promise<void> {
-  await deleteDoc(doc(db, 'families', familyId, 'children', childId));
+  const [childSnap, choreSnap] = await Promise.all([
+    getDoc(doc(db, 'families', familyId, 'children', childId)),
+    getDocs(query(
+      collection(db, 'families', familyId, 'chores'),
+      where('assignedChildId', '==', childId),
+      where('isActive', '==', true),
+    )),
+  ]);
+
+  const linkedDeviceId = childSnap.exists() ? childSnap.data().linkedDeviceId : null;
+
+  const batch = writeBatch(db);
+  batch.delete(doc(db, 'families', familyId, 'children', childId));
+
+  // Soft-delete chores so completion history is preserved
+  choreSnap.docs.forEach((choreDoc) => {
+    batch.update(choreDoc.ref, { isActive: false });
+  });
+
+  // Unlink the device so the kid is returned to onboarding
+  if (linkedDeviceId) {
+    batch.set(doc(db, 'users', linkedDeviceId), {
+      role: 'parent',
+      linkedChildId: null,
+    }, { merge: true });
+  }
+
+  await batch.commit();
 }

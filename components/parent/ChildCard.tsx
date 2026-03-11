@@ -16,7 +16,10 @@ export function ChildCard({ child, onPress }: Props) {
   const { completions } = useCompletionsStore();
   const { chores } = useChoresStore();
 
-  const todayChores = chores.filter((c) => c.assignedChildId === child.id);
+  // Only count daily chores in the denominator — weekly/once chores aren't due "today"
+  const dailyChores = chores.filter(
+    (c) => c.assignedChildId === child.id && c.schedule === 'daily',
+  );
   const todayCompletions = completions.filter(
     (c) => c.childId === child.id && isToday(c.submittedAt) && c.status !== 'rejected'
   );
@@ -40,7 +43,7 @@ export function ChildCard({ child, onPress }: Props) {
           <View className="flex-1">
             <Text variant="h3">{child.name}</Text>
             <Text variant="caption">
-              {todayCompletions.length}/{todayChores.length} chores done today
+              {todayCompletions.length}/{dailyChores.length} daily chores done
             </Text>
           </View>
         </View>

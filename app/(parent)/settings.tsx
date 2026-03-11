@@ -22,6 +22,14 @@ import { generateJoinCode, generateKidDeviceCode } from '@/services/firestore';
 const CURRENCIES = ['AUD', 'USD', 'GBP', 'EUR'] as const;
 type Currency = (typeof CURRENCIES)[number];
 
+const TIER_NAMES: Record<string, string> = {
+  'com.chorely.starter':        'Starter (Weekly)',
+  'com.chorely.starter.annual': 'Starter (Annual)',
+  'com.chorely.family':         'Family (Weekly)',
+  'com.chorely.family.annual':  'Family (Annual)',
+  'com.chorely.unlimited':      'Lifetime Unlimited',
+};
+
 export default function Settings() {
   const { family, children } = useFamilyStore();
   const { familyId } = useAuthStore();
@@ -251,6 +259,27 @@ export default function Settings() {
                 </Text>
               </TouchableOpacity>
             ))}
+          </View>
+        </Card>
+
+        {/* Subscription section */}
+        <Text variant="h3" className="mb-3 text-gray-900">Subscription</Text>
+        <Card className="mb-6">
+          <View className="flex-row items-center justify-between">
+            <View>
+              <Text variant="label" className="mb-1">Current Plan</Text>
+              <Text variant="body" className="text-gray-900">
+                {TIER_NAMES[family.tierProductId] ?? 'Free'}
+              </Text>
+            </View>
+            {family.tierProductId !== 'com.chorely.unlimited' && (
+              <TouchableOpacity
+                onPress={() => router.push('/(auth)/paywall')}
+                className="bg-primary rounded-2xl px-5 py-2"
+              >
+                <Text className="text-white font-semibold text-sm">Upgrade</Text>
+              </TouchableOpacity>
+            )}
           </View>
         </Card>
 

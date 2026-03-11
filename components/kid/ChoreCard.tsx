@@ -7,9 +7,11 @@ interface Props {
   chore: Chore;
   completion?: Completion;
   onPress: () => void;
+  /** Pre-formatted reward label (e.g. "$2.00" or "5 ⭐"). Shown on uncompleted chores. */
+  rewardLabel?: string;
 }
 
-export function ChoreCard({ chore, completion, onPress }: Props) {
+export function ChoreCard({ chore, completion, onPress, rewardLabel }: Props) {
   const isPending = completion?.status === 'pending';
   const isDone = completion?.status === 'approved';
   const isRejected = completion?.status === 'rejected';
@@ -53,8 +55,16 @@ export function ChoreCard({ chore, completion, onPress }: Props) {
       )}
 
       {!isDone && !isPending && !isRejected && (
-        <View className="bg-primary rounded-2xl py-3 px-5 items-center mt-3">
-          <Text className="text-white font-bold text-lg">Done! 🎉</Text>
+        <View className="flex-row items-center justify-between mt-3">
+          <View className="bg-primary rounded-2xl py-3 px-5 items-center flex-1 mr-3">
+            <Text className="text-white font-bold text-lg">Done! 🎉</Text>
+          </View>
+          {!!rewardLabel && (
+            <View className="items-center">
+              <Text className="text-xs text-gray-400 mb-0.5">Earn</Text>
+              <Text className="text-primary font-bold text-base">{rewardLabel}</Text>
+            </View>
+          )}
         </View>
       )}
     </TouchableOpacity>

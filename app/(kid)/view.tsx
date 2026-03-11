@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { View, ScrollView, SafeAreaView, Alert, ActivityIndicator } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, ScrollView, SafeAreaView, Alert, ActivityIndicator, TouchableOpacity } from 'react-native';
+import { router } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Text } from '@/components/ui/Text';
 import { ChoreCard } from '@/components/kid/ChoreCard';
@@ -20,6 +21,9 @@ export default function KidView() {
   const [celebrating, setCelebrating] = useState(false);
   const [celebrationMsg, setCelebrationMsg] = useState('');
   const [uploadingChoreId, setUploadingChoreId] = useState<string | null>(null);
+
+  // Stable reference prevents CelebrationOverlay from resetting its internal timer on re-render
+  const handleCelebrationDone = useCallback(() => setCelebrating(false), []);
 
   const child = children.find((c) => c.id === linkedChildId);
   if (!child || !family) return null;
@@ -140,6 +144,9 @@ export default function KidView() {
           <Text className="text-4xl font-bold text-primary mt-2">
             {formatBalance(child, child.balance, family.currency)}
           </Text>
+          <TouchableOpacity onPress={() => router.push('/(kid)/history')} className="mt-3">
+            <Text variant="caption" className="text-primary">View History →</Text>
+          </TouchableOpacity>
         </View>
 
         <Text variant="h3" className="mb-4">Today's Chores</Text>
@@ -152,6 +159,7 @@ export default function KidView() {
               chore={chore}
               completion={completion}
               onPress={() => handleChorePress(chore)}
+              rewardLabel={formatReward(child, chore.value, family.currency)}
             />
           );
         })}
@@ -166,7 +174,7 @@ export default function KidView() {
       <CelebrationOverlay
         visible={celebrating}
         message={celebrationMsg}
-        onDone={() => setCelebrating(false)}
+        onDone={handleCelebrationDone}
       />
     </SafeAreaView>
   );

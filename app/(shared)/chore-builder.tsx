@@ -39,6 +39,12 @@ export default function ChoreBuilder() {
   async function handleSave() {
     if (!family || !name.trim() || !assignedChildId) return;
 
+    // Enforce 40-character name limit
+    if (name.trim().length > 40) {
+      Alert.alert('Name too long', 'Chore name must be 40 characters or fewer.');
+      return;
+    }
+
     // Bug #22 fix: disallow zero or negative reward values
     const numValue = parseFloat(value);
     if (isNaN(numValue) || numValue <= 0) {
@@ -86,6 +92,7 @@ export default function ChoreBuilder() {
           placeholder="e.g. Tidy bedroom"
           value={name}
           onChangeText={setName}
+          maxLength={40}
         />
 
         <Text variant="label" className="mb-3">Icon</Text>
